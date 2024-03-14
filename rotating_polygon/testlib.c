@@ -50,13 +50,6 @@ double radius_condition(double dir, double radius){
 		return dir;
 }
 
-double angle_conditions(double angle) {
-    if (angle >= (2 * M_PI)) {
-        angle = 0;
-    }
-    return angle;
-}
-
 
 int main(int argc, char* argv[])
 {
@@ -82,11 +75,11 @@ int main(int argc, char* argv[])
 		dir = radius_condition(dir, radius);
 
 		angle += RATE_ANGLE;
-		angle = angle_conditions(angle);
+		angle = fmod(angle, 2 * M_PI);
 
 		gfx_updateScreen();
 		SDL_Delay(10);
-		printf("%.4lf\n", angle);
+		//printf("%.4lf\n", angle);
 
 		if (gfx_pollkey() == SDLK_ESCAPE){
 			break;
