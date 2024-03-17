@@ -11,8 +11,9 @@
 #define PEG_WIDTH 10
 
 #define NUMBER_PEGS 3
-#define NUMBER_DISK 40
-#define DISK_HEIGHT 15
+#define NUMBER_DISK 4
+#define BASE_DISK_HEIGHT 15
+#define BASE_DISK_WIDTH 5
 
 
 typedef struct 
@@ -70,8 +71,6 @@ Disk peek(Peg *pegs) {
     return peeked_disk;
 }
 
-
-
 // stack
 
 
@@ -81,8 +80,7 @@ int get_peg_x(int index){
 }
 
 int get_peg_height(){
-	int height = BASE_PEG_HEIGHT / NUMBER_PEGS;
-	return height;
+	return BASE_DISK_HEIGHT * (NUMBER_DISK + 2);
 }
 
 
@@ -97,17 +95,17 @@ void init_pegs(Peg *pegs){
 void init_disk(Peg *pegs){
     for(int i = NUMBER_DISK; i > 0; i--){
         Disk new_disk;
-        new_disk.x_left = get_peg_x(1) - 5 * (i+1);
-        new_disk.x_right = get_peg_x(1) + PEG_WIDTH + 5 * (i+1);
-        new_disk.y_bot = gfx_screenHeight() - FLOOR_HEIGHT - DISK_HEIGHT * (NUMBER_DISK - i);
-        new_disk.y_top = gfx_screenHeight() - FLOOR_HEIGHT - DISK_HEIGHT * (NUMBER_DISK - i + 1);
+        new_disk.x_left = get_peg_x(1) - BASE_DISK_WIDTH * (i+1);
+        new_disk.x_right = get_peg_x(1) + PEG_WIDTH + BASE_DISK_WIDTH * (i+1);
+        new_disk.y_bot = gfx_screenHeight() - FLOOR_HEIGHT - BASE_DISK_HEIGHT * (NUMBER_DISK - i);
+        new_disk.y_top = gfx_screenHeight() - FLOOR_HEIGHT - BASE_DISK_HEIGHT * (NUMBER_DISK - i + 1);
         new_disk.index = i;
         push(&pegs[0], new_disk);
 
 		printf("Disk %d - X: %d, Y: %d\n", new_disk.index, new_disk.x_left, new_disk.y_bot);
+		
     }
 }
-
 
 
 void draw_disk(Peg *pegs) {
@@ -156,9 +154,6 @@ int main(int argc, char* argv[])
 						BLACK);
 
 		gfx_filledRect(0, gfx_screenHeight() - FLOOR_HEIGHT, gfx_screenWidth() -1, gfx_screenHeight() - 1, YELLOW);
-		
-		gfx_line(0, 540, gfx_screenWidth()-1, 540, RED);
-		gfx_line(0, 675, gfx_screenWidth()-1, 675, MAGENTA);
 
 		draw_pegs();
 		draw_disk(pegs);
