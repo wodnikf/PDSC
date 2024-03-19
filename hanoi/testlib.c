@@ -3,18 +3,15 @@
 #include <unistd.h>
 #include <stdbool.h>
 
-
 #define EMPTY_STACK -1
 
 #define FLOOR_HEIGHT 25
-#define BASE_PEG_HEIGHT 1000
 #define PEG_WIDTH 10
 
 #define NUMBER_PEGS 3
-#define NUMBER_DISK 4
-#define BASE_DISK_HEIGHT 15
-#define BASE_DISK_WIDTH 5
-
+#define NUMBER_DISC 4
+#define BASE_DISC_HEIGHT 15
+#define BASE_DISC_WIDTH 5
 
 typedef struct 
 {
@@ -22,57 +19,48 @@ typedef struct
 	int x_right;
 	int y_top;
 	int y_bot;
-	int index;
-}Disk;
+	int size;
+} Disc;
 
-
-// stack
 typedef struct
 {
-	Disk disks[NUMBER_DISK];
+	Disc discs[NUMBER_DISC];
 	int top;
-}Peg;
+} Peg;
 
-void push(Peg *pegs, Disk index){
-
-	if (pegs->top == NUMBER_DISK -1){
-		return;
-	}
-
-	pegs->top++;
-	pegs->disks[pegs->top] = index;
-}
-
-Disk pop(Peg *pegs){
-	Disk popped_disk;
-
-	if (pegs->top == EMPTY_STACK){
-		popped_disk.index = EMPTY_STACK;
-		return popped_disk;
-	}
-
-	popped_disk = pegs->disks[pegs->top];
-	pegs->top--;
-
-	return popped_disk;
-}
-
-Disk peek(Peg *pegs) {
-    Disk peeked_disk;
-
-    if (pegs->top == EMPTY_STACK) {
-        printf("The stack is empty.\n");
-        peeked_disk.index = EMPTY_STACK;
-        return peeked_disk;
+void push(Peg* pegs, Disc disc)
+{
+    if (pegs->top == NUMBER_DISC - 1) {
+        printf("The stack is full.\n");
+        exit(1);
     }
 
-    peeked_disk = pegs->disks[pegs->top];
-    printf("Top disk index: %d\n", peeked_disk.index);
-    return peeked_disk;
+    pegs->top++;
+    pegs->discs[pegs->top] = disc;
 }
 
-// stack
+Disc pop(Peg* pegs)
+{
+    if (pegs->top == EMPTY_STACK) {
+        printf("The stack is empty.\n");
+        exit(1);
+    }
 
+    Disc popped_disc = pegs->discs[pegs->top];
+    pegs->top--;
+
+    return popped_disc;
+}
+
+Disc peek(Peg* pegs)
+{
+    if (pegs->top == EMPTY_STACK) {
+        printf("The stack is empty.\n");
+        exit(1);
+    }
+
+    return pegs->discs[pegs->top];
+}
 
 int get_peg_x(int index){
 	int x = gfx_screenWidth() / (NUMBER_PEGS + 1) * index;
@@ -80,46 +68,59 @@ int get_peg_x(int index){
 }
 
 int get_peg_height(){
-	return BASE_DISK_HEIGHT * (NUMBER_DISK + 2);
+	return BASE_DISC_HEIGHT * (NUMBER_DISC + 2);
 }
 
-
-void init_pegs(Peg *pegs){
-	for (int i = 0; i < NUMBER_PEGS; i++){
-		Peg new_peg;
-		new_peg.top = EMPTY_STACK;
-		pegs[i] = new_peg;
-	}
-}
-
-void init_disk(Peg *pegs){
-    for(int i = NUMBER_DISK; i > 0; i--){
-        Disk new_disk;
-        new_disk.x_left = get_peg_x(1) - BASE_DISK_WIDTH * (i+1);
-        new_disk.x_right = get_peg_x(1) + PEG_WIDTH + BASE_DISK_WIDTH * (i+1);
-        new_disk.y_bot = gfx_screenHeight() - FLOOR_HEIGHT - BASE_DISK_HEIGHT * (NUMBER_DISK - i);
-        new_disk.y_top = gfx_screenHeight() - FLOOR_HEIGHT - BASE_DISK_HEIGHT * (NUMBER_DISK - i + 1);
-        new_disk.index = i;
-        push(&pegs[0], new_disk);
-
-		printf("Disk %d - X: %d, Y: %d\n", new_disk.index, new_disk.x_left, new_disk.y_bot);
-		
+void init_pegs(Peg* pegs)
+{
+    for (int i = 0; i < NUMBER_PEGS; i++) {
+        pegs[i].top = EMPTY_STACK;
     }
 }
 
+void init_disc(Peg* pegs)
+{
+    for (int i = NUMBER_DISC; i > 0; i--) {
+        Disc new_disc;
+        new_disc.x_left = get_peg_x(1) - BASE_DISC_WIDTH * (i + 1);
+        new_disc.x_right = get_peg_x(1) + PEG_WIDTH + BASE_DISC_WIDTH * (i + 1);
+        new_disc.y_bot = gfx_screenHeight() - FLOOR_HEIGHT - BASE_DISC_HEIGHT * (NUMBER_DISC - i);
+        new_disc.y_top = gfx_screenHeight() - FLOOR_HEIGHT - BASE_DISC_HEIGHT * (NUMBER_DISC - i + 1);
+        new_disc.size = i;
+        push(&pegs[0], new_disc);
 
-void draw_disk(Peg *pegs) {
+        printf("Disc %d - X: %d, Y: %d\n", new_disc.size, new_disc.x_left, new_disc.y_bot);
+    }
+}
+
+void draw_disc(Peg *pegs) {
     for (int i = 0; i < NUMBER_PEGS; i++) {
         Peg current_peg = pegs[i];
         for (int j = 0; j <= current_peg.top; j++) {
-            Disk current_disk = current_peg.disks[j];
-            gfx_filledRect(current_disk.x_left, current_disk.y_bot, 
-                           current_disk.x_right, current_disk.y_top, BLUE);
+            Disc current_disc = current_peg.discs[j];
+            gfx_filledRect(current_disc.x_left, current_disc.y_bot, 
+                           current_disc.x_right, current_disc.y_top, BLUE);
         }
     }
 }
 
+bool legal_move(Peg *pegs, int current, int destination){
+	Disc top_current = peek(&pegs[current]);
+    Disc top_destination = peek(&pegs[destination]);
 
+	if (top_current.size < top_destination.size) {	
+	return true;
+	}
+	return false;
+}
+
+void move_disc(Peg *pegs, int current, int destination){
+	if (!legal_move(pegs, current, destination)){
+		return;
+	}
+	Disc disc_to_move = pop(&pegs[current]);
+	push(&pegs[destination], disc_to_move);
+}
 
 
 void draw_pegs(){
@@ -133,6 +134,30 @@ void draw_pegs(){
 	}
 }
 
+void draw_screen(){
+	gfx_filledRect(0, 0, gfx_screenWidth() - 1, gfx_screenHeight() - 1,
+						BLACK);
+}
+
+void draw_floor(){
+	gfx_filledRect(0, gfx_screenHeight() - FLOOR_HEIGHT,
+			gfx_screenWidth() -1,
+			gfx_screenHeight() - 1,
+			YELLOW);
+}
+
+void draw_on_screen(Peg *pegs){
+	
+	draw_screen();
+
+	draw_floor();
+
+	draw_pegs();
+	draw_disc(pegs);
+
+	gfx_updateScreen();
+
+}
 
 int main(int argc, char* argv[])
 {
@@ -144,21 +169,15 @@ int main(int argc, char* argv[])
 
 
 	init_pegs(pegs);
-	init_disk(pegs);
+	init_disc(pegs);
 
 	peek(&pegs[0]);
 
 	
 	while(1){
-		gfx_filledRect(0, 0, gfx_screenWidth() - 1, gfx_screenHeight() - 1,
-						BLACK);
+		
+		draw_on_screen(pegs);
 
-		gfx_filledRect(0, gfx_screenHeight() - FLOOR_HEIGHT, gfx_screenWidth() -1, gfx_screenHeight() - 1, YELLOW);
-
-		draw_pegs();
-		draw_disk(pegs);
-
-		gfx_updateScreen();
 		SDL_Delay(10);
 
 		if(gfx_pollkey() == SDLK_ESCAPE){
