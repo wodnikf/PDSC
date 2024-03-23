@@ -8,8 +8,8 @@
 #define FLOOR_HEIGHT 25
 #define PEG_WIDTH 10
 
-#define NUMBER_PEGS 3
-#define NUMBER_DISC 2
+#define NUMBER_PEGS 5
+#define NUMBER_DISC 4
 #define BASE_DISC_HEIGHT 15
 #define BASE_DISC_WIDTH 5
 
@@ -34,6 +34,14 @@ bool is_empty(Peg* pegs) {
     }
     return false;
 }
+
+bool is_full(Peg* pegs, int peg_index) {
+    if (pegs[peg_index].top == NUMBER_DISC - 1) {
+        return true;
+    }
+    return false;
+}
+
 
 void push(Peg* pegs, Disc disc)
 {
@@ -126,7 +134,7 @@ void draw_pegs(){
 
 int input() {
     int key = gfx_getkey();
-    int key_value;
+    int key_value = -1;
     switch (key) {
         case SDLK_ESCAPE:
             exit(0);
@@ -137,9 +145,9 @@ int input() {
                 printf("Selected peg: %d\n", key_value);
 			}
     }
+    printf("returned value: %d\n", key_value);
     return key_value;
 }
-
 
 void draw_screen(){
 	gfx_filledRect(0, 0, gfx_screenWidth() - 1, gfx_screenHeight() - 1,
@@ -184,20 +192,28 @@ void print_discs_on_pegs(Peg *pegs) {
 
 bool legal_move(Peg *pegs, int source, int destination){
     
-    int value_source = pegs[source].discs->size;
-    int value_destination = pegs[destination].discs->size;
+    if (source == -1 || destination == -1){
+        return false;
+    }
 
     if (is_empty(&pegs[source])){
+        printf("Empty source\n");
         return false;
     }
     if (is_empty(&pegs[destination])){
+        printf("Empty destination\n");
         return true;
     }
-    if (value_source < value_destination){
+
+    int size_source = peek(&pegs[source]).size;
+    int size_destination = peek(&pegs[destination]).size;
+
+    if (size_source < size_destination){
         return true;
     }
     return false;
 }
+
 
 void move_disc(Peg *pegs, int source, int destination) {
     if (legal_move(pegs, source, destination)) {
@@ -209,8 +225,11 @@ void move_disc(Peg *pegs, int source, int destination) {
     }
 }
 
-void check_win(Peg *pegs){
-    //pass
+bool check_win(Peg *pegs){
+    if (is_full(pegs, NUMBER_PEGS -1)){
+        return true;
+    }
+    return false;
 }
 
 
@@ -236,6 +255,11 @@ int main(int argc, char* argv[])
 		print_discs_on_pegs(pegs);
 
 		SDL_Delay(10);
+
+        if (check_win(pegs)){
+            printf("You won\n");
+            exit(0);
+        }
 	}
 
 	return 0;
