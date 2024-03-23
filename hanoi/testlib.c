@@ -9,7 +9,7 @@
 #define PEG_WIDTH 10
 
 #define NUMBER_PEGS 3
-#define NUMBER_DISC 4
+#define NUMBER_DISC 2
 #define BASE_DISC_HEIGHT 15
 #define BASE_DISC_WIDTH 5
 
@@ -27,6 +27,13 @@ typedef struct
 	Disc discs[NUMBER_DISC];
 	int top;
 } Peg;
+
+bool is_empty(Peg* pegs) {
+    if (pegs->top == EMPTY_STACK) {
+        return true;
+    }
+    return false;
+}
 
 void push(Peg* pegs, Disc disc)
 {
@@ -61,6 +68,7 @@ Disc peek(Peg* pegs)
 
     return pegs->discs[pegs->top];
 }
+
 
 int get_peg_x(int index){
 	int x = gfx_screenWidth() / (NUMBER_PEGS + 1) * index;
@@ -104,24 +112,6 @@ void draw_disc(Peg *pegs) {
     }
 }
 
-bool legal_move(Peg *pegs, int current, int destination){
-	Disc top_current = peek(&pegs[current]);
-    Disc top_destination = peek(&pegs[destination]);
-
-	if (top_current.size < top_destination.size) {	
-	return true;
-	}
-	return false;
-}
-
-void move_disc(Peg *pegs, int current, int destination){
-	if (!legal_move(pegs, current, destination)){
-		return;
-	}
-	Disc disc_to_move = pop(&pegs[current]);
-	push(&pegs[destination], disc_to_move);
-}
-
 
 void draw_pegs(){
 	for (int i = 0; i < NUMBER_PEGS; i++){
@@ -133,6 +123,23 @@ void draw_pegs(){
                GREEN);
 	}
 }
+
+int input() {
+    int key = gfx_getkey();
+    int key_value;
+    switch (key) {
+        case SDLK_ESCAPE:
+            exit(0);
+            break;
+        default:
+            if (key >= '0' && key <= '0' + NUMBER_PEGS - 1) {
+                key_value = key - '0';
+                printf("Selected peg: %d\n", key_value);
+			}
+    }
+    return key_value;
+}
+
 
 void draw_screen(){
 	gfx_filledRect(0, 0, gfx_screenWidth() - 1, gfx_screenHeight() - 1,
@@ -158,6 +165,54 @@ void draw_on_screen(Peg *pegs){
 	gfx_updateScreen();
 
 }
+void print_discs_on_pegs(Peg *pegs) {
+    printf("Current positions of discs on pegs:\n");
+    for (int i = 0; i < NUMBER_PEGS; i++) {
+        printf("Peg %d:\n", i + 1);
+        Peg current_peg = pegs[i];
+        if (is_empty(&current_peg)) {
+            printf("    Peg is empty\n");
+        } else {
+            printf("    Discs:");
+            for (int j = 0; j <= current_peg.top; j++) {
+                printf(" %d", current_peg.discs[j].size);
+            }
+            printf("\n");
+        }
+    }
+}
+
+bool legal_move(Peg *pegs, int source, int destination){
+    
+    int value_source = pegs[source].discs->size;
+    int value_destination = pegs[destination].discs->size;
+
+    if (is_empty(&pegs[source])){
+        return false;
+    }
+    if (is_empty(&pegs[destination])){
+        return true;
+    }
+    if (value_source < value_destination){
+        return true;
+    }
+    return false;
+}
+
+void move_disc(Peg *pegs, int source, int destination) {
+    if (legal_move(pegs, source, destination)) {
+        Disc disc_to_move = pop(&pegs[source]);
+        push(&pegs[destination], disc_to_move);
+        printf("Moved disc %d from peg %d to peg %d\n", disc_to_move.size, source + 1, destination + 1);
+    } else {
+        printf("Illegal move. Please try again.\n");
+    }
+}
+
+void check_win(Peg *pegs){
+    //pass
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -170,19 +225,17 @@ int main(int argc, char* argv[])
 
 	init_pegs(pegs);
 	init_disc(pegs);
-
-	peek(&pegs[0]);
-
 	
 	while(1){
-		
 		draw_on_screen(pegs);
 
-		SDL_Delay(10);
+		int source = input();
+		int destination = input();
 
-		if(gfx_pollkey() == SDLK_ESCAPE){
-			break;
-		}
+        move_disc(pegs, source, destination);
+		print_discs_on_pegs(pegs);
+
+		SDL_Delay(10);
 	}
 
 	return 0;
