@@ -304,7 +304,6 @@ void movement_left_or_right(Disc *disc, Peg *pegs, int source, int destination)
     }
 }
 
-
 void movement_down(Disc *disc, Peg *pegs, int destination)
 {
     int goal_height = gfx_screenHeight() - FLOOR_HEIGHT - (pegs[destination].top + 1) * get_disc_height();
