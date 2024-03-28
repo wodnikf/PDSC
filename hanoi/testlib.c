@@ -9,7 +9,7 @@
 #define PEG_WIDTH 10
 
 #define NUMBER_PEGS 3
-#define NUMBER_DISC 1
+#define NUMBER_DISC 3
 #define MAX_DISC_HEIGHT 40
 #define BASE_DISC_WIDTH 5
 
@@ -224,10 +224,16 @@ int input()
         case SDLK_ESCAPE:
             exit(0);
             break;
+        case SDLK_0:
+            if(NUMBER_PEGS == 10){
+                key_value = 9;
+            }
+            break;
         default:
-            if (key >= '0' && key <= '0' + NUMBER_PEGS - 1) {
-                key_value = key - '0';
+            if (key >= '1' && key <= '1' + NUMBER_PEGS - 1) {
+                key_value = key - '1';
 			}
+            break;
     }
     return key_value;
 }
@@ -304,8 +310,8 @@ void movement_down(Disc *disc, Peg *pegs, int destination)
     int goal_height = gfx_screenHeight() - FLOOR_HEIGHT - (pegs[destination].top + 1) * get_disc_height();
 
     while((int)disc->y_bot != goal_height){
-        disc->y_bot ++;
-        disc->y_top ++;
+        disc->y_bot++;
+        disc->y_top++;
         animation(pegs, disc);
     }
 }
@@ -359,9 +365,8 @@ bool check_win(Peg *pegs){
 
 void draw_win_screen()
 {
-    printf("You won\n");
     draw_screen();
-    gfx_textout(gfx_screenWidth() / 2 - 100, gfx_screenHeight() / 2, "Congratulations! You WON!", RED);
+    gfx_textout(gfx_screenWidth() / 2 - 100, gfx_screenHeight() / 2, "Congratulations! YOU WON!", RED);
     gfx_updateScreen();
     SDL_Delay(5000);
     exit(0);
