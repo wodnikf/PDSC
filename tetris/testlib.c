@@ -12,7 +12,9 @@
 #define BOARD_WIDTH 10
 #define BOARD_HEIGHT 20
 #define PIECE_SIZE 4
-#define SHAPE 7
+#define ROTATIONS 4
+#define COLORS 7
+#define SHAPES 7
 
 #define SQUARE_SIZE SCREEN_HEIGHT / (BOARD_HEIGHT + 4)
 #define BOARD_X ((SCREEN_WIDTH - SQUARE_SIZE * BOARD_WIDTH) / 2)
@@ -37,11 +39,13 @@ void draw_screen();
 void draw_grid();
 void draw_square(int x_pos, int y_pos, int color);
 Piece init_piece(int shape, int rotation, int color);
+void random_piece();
 void draw_piece(Piece piece);
 void print_board();
 void add_on_board(Piece piece);
 int find_left(Piece piece);
 int find_top(Piece piece);
+int find_right(Piece piece);
 void check_left();
 void check_right();
 void check_collisions();
@@ -55,15 +59,14 @@ int main(int argc, char *argv[])
 	}
 	srand(time(NULL));
 
-	print_board();
-	Piece p;
-	p = init_piece(1, 1, 3);
+	Piece current_piece;
+	random_piece(&current_piece);
 	print_board();
 
 	while (true)
 	{
 		draw_screen();
-		draw_piece(p);
+		draw_piece(current_piece);
 		draw_grid();
 		
 		
@@ -120,6 +123,15 @@ Piece init_piece(int shape, int rotation, int color)
 	return piece;
 }
 
+void random_piece(Piece *piece)
+{
+	int piece_index = rand() % SHAPES;
+	int rotation_index = rand() % ROTATIONS;
+	int color_index = rand() % COLORS + 1;
+	
+	*piece = init_piece(piece_index, rotation_index, color_index);
+}
+
 void add_on_board(Piece piece)
 {
 	for (int row = 0; row < PIECE_SIZE; row++){
@@ -134,7 +146,6 @@ void add_on_board(Piece piece)
 
 int find_left(Piece piece)
 {
-
 	// to do: optymalizacja, dodac break
 	int temp = PIECE_SIZE;
 	for (int row = 0; row < PIECE_SIZE; row++){
@@ -162,6 +173,20 @@ int find_top(Piece piece)
 	return temp;
 }
 
+int find_right(Piece piece)
+{
+	int temp = PIECE_SIZE;
+	for (int row = 0; row < PIECE_SIZE; row++){
+		for (int col = 0; col < PIECE_SIZE; col++){
+			if (piece.fields[row][col] && (col > temp)){
+				temp = col;
+				break;
+			}
+		}
+	}
+	return temp;
+}
+
 void draw_piece(Piece piece) {
     for (int row = 0; row < PIECE_SIZE; row++) {
         for (int col = 0; col < PIECE_SIZE; col++) {
@@ -180,4 +205,5 @@ void print_board() {
         }
         printf("\n");
     }
+	printf("\n");
 }
