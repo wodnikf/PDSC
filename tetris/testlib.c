@@ -29,6 +29,8 @@ int board[BOARD_HEIGHT][BOARD_WIDTH] = {{0}};
 typedef struct
 {	
 	int fields[4][4];
+	int number_active_fields[2];
+	int active_fields[4][2];
 	int shape;
 	int rotation;
 	int color;
@@ -46,7 +48,7 @@ void draw_piece(Piece piece);
 void draw_dumped_pieces(); 
 void print_board();
 void add_on_board(Piece piece);
-int find_left(Piece piece);
+int find_left(Piece *piece);
 int find_top(Piece piece);
 int find_right(Piece *piece);
 int find_bottom_y(Piece piece);
@@ -57,6 +59,7 @@ bool check_collision_bottom(Piece *piece);
 void change_fields_into_dump(Piece *piece);
 void check_and_add_new_piece(Piece *piece);
 void rotate(Piece *piece);
+void number_active_fields(Piece *piece);
 
 int main(int argc, char *argv[])
 {
@@ -69,8 +72,7 @@ int main(int argc, char *argv[])
 
 	Piece current_piece;
 	random_piece(&current_piece);
-	// current_piece = init_piece(3, 3, 2);
-	printf("%d \n", find_right(&current_piece));
+	current_piece = init_piece(6, 0, 2);
 
 	while (true)
 	{
@@ -80,11 +82,13 @@ int main(int argc, char *argv[])
 		draw_grid();
 		
 		print_board();
+		// printf("%d \n", find_right(&current_piece));
+		// printf("%d \n", current_piece.number_active_fields[0]);
 		input(&current_piece);
 		move_Y(&current_piece);
 		draw_dumped_pieces();
 		check_and_add_new_piece(&current_piece);
-		SDL_Delay(500);
+		SDL_Delay(250);
 		
 		gfx_updateScreen();
 
@@ -133,9 +137,11 @@ Piece init_piece(int shape, int rotation, int color)
 		}
 	}
 
+
 	// piece.x = rand() % BOARD_WIDTH - find_left(piece);
 	piece.x = BOARD_WIDTH / 2 - 1;
 	piece.y = -find_top(piece);
+	number_active_fields(&piece);
 	
 	add_on_board(piece);
 
@@ -164,20 +170,28 @@ void add_on_board(Piece piece)
 
 }
 
-int find_left(Piece piece)
+int find_left(Piece *piece)
 {
-	// to do: optymalizacja, dodac break
-	int temp = PIECE_SIZE;
-	for (int row = 0; row < PIECE_SIZE; row++){
-		for (int col = 0; col < PIECE_SIZE; col++){
-			if (piece.fields[row][col] && (col < temp)){
-				temp = col;
-				break;
-			}
-		}
-	}
-	return temp;
+    return piece->x;
 }
+
+int find_right(Piece *piece)
+{
+    int temp = -1; // Initialize temp to -1, indicating no active cells found yet
+    for (int row = 0; row < PIECE_SIZE; row++) {
+        for (int col = PIECE_SIZE - 1; col >= 0; col--) {
+            if (piece->fields[row][col]) { // If the cell is active
+                if (col > temp) { // If the column index is greater than current temp
+                    temp = col; // Update temp with the new column index
+                }
+                break; // Break out of the inner loop to move to the next row
+            }
+        }
+    }
+    // Adjust the rightmost index by adding the piece's x position
+    return temp + piece->x;
+}
+
 
 int find_top(Piece piece)
 {
@@ -199,18 +213,6 @@ int find_bottom_y(Piece piece){
                 return row + piece.y;
             }
         }
-	}
-	return 0;
-}
-
-int find_right(Piece *piece)
-{
-	for (int row = 0; row < PIECE_SIZE; row++){
-		for (int col = PIECE_SIZE -1; col >= 0; col--){
-			if (piece->fields[row][col]){
-				return col + piece->x;
-			}
-		}
 	}
 	return 0;
 }
@@ -250,30 +252,22 @@ void print_board() {
 
 bool check_collision_bottom(Piece *piece)
 {
-    // Check if piece exceeds the left or right board boundary
-    if (piece->x < 0 || find_right(piece) >= BOARD_WIDTH) {
-        return true;
-    }
-
-    // Check if the bottom row of the piece reaches the bottom of the board
-    if (find_bottom_y(*piece) == BOARD_HEIGHT - 1) {
-        return true;
-    }
-
-    // Check for collision with dumped pieces on the board
-    for (int i = PIECE_SIZE - 1; i >= 0; i--) {
+	for (int i = 0; i < PIECE_SIZE; i++){
+		if(find_bottom_y(*piece) == BOARD_HEIGHT - 1){
+			return true;
+		}
+	}
+	for (int i = 0; i < PIECE_SIZE; i++) {
         for (int j = 0; j < PIECE_SIZE; j++) {
-            if (piece->fields[i][j]) {
-                int new_x = piece->x + j;
-                int new_y = find_bottom_y(*piece) + i; // Next row below the piece
-                if (board[new_y][new_x] == DUMPED_PIECE) {
-                    return true;
-                }
+            if (piece->fields[i][j] && board[piece->y + i + 1][piece->x + j] == DUMPED_PIECE) {
+                return true;
             }
         }
     }
+
     return false;
 }
+
 
 
 void move_Y(Piece *piece) {
@@ -342,25 +336,65 @@ void input(Piece *piece)
 
 }
 
+bool check_collision_right(Piece *piece)
+{
+	if (find_right(piece) >= BOARD_WIDTH - 1){
+		return true;
+	}
+
+	for (int i = 0; i < PIECE_SIZE; i++){
+		for (int j = 0; j < PIECE_SIZE; j++){
+			if (piece->fields[i][j] && board[piece->y + i][piece->x + j] == DUMPED_PIECE){
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool check_collision_left(Piece *piece)
+{
+    // Check if the piece is already at the leftmost position
+    if (piece->x <= 0)
+        return true;
+
+    // Check if there's a collision with other pieces
+    for (int i = 0; i < PIECE_SIZE; i++) {
+        for (int j = 0; j < PIECE_SIZE; j++) {
+            if (piece->fields[i][j] && board[piece->y + i][piece->x + j - 1] == DUMPED_PIECE) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
 void move_x(Piece *piece, int change_x)
 {
     // Temporarily remove the piece from the board
-	if (!check_collision_bottom(piece)){
-    	for (int i = 0; i < PIECE_SIZE; i++){
-        	for (int j = 0; j < PIECE_SIZE; j++){
-            	if (piece->fields[i][j]){
-                	board[piece->y + i][piece->x + j] = EMPTY_SPACE;
-        	}
-		}
-	}
+    if (check_collision_right(piece) && change_x == 1) {
+        return; // If collision with the right side, do not move right
+    }
+    if (check_collision_left(piece) && change_x == -1) {
+        return; // If collision with the left side, do not move left
+    }
+
+    for (int i = 0; i < PIECE_SIZE; i++) {
+        for (int j = 0; j < PIECE_SIZE; j++) {
+            if (piece->fields[i][j]) {
+                board[piece->y + i][piece->x + j] = EMPTY_SPACE;
+            }
+        }
+    }
 
     // Update the piece position
     piece->x += change_x;
 
     // Add the piece back to the board
     add_on_board(*piece);
-	}
 }
+
 void rotate(Piece *piece)
 {
 	int new_rot = (piece->rotation + 1) % ROTATIONS;
@@ -369,4 +403,21 @@ void rotate(Piece *piece)
 	*piece = rotated;
 
 	add_on_board(*piece);
+}
+
+void number_active_fields(Piece *piece)
+{
+	int square_count = 0;
+	for (int i = 0; i < PIECE_SIZE; i++){
+		for (int j = 0; j < PIECE_SIZE; j++){
+			if (piece->fields[i][j]){
+				piece->number_active_fields[0] = find_right(piece) - find_left(piece) + 1;
+				piece->number_active_fields[1] = find_bottom_y(*piece) - find_top(*piece) + 1;
+				piece->active_fields[square_count][0] = find_left(piece) + i;
+				piece->active_fields[square_count][1] = find_top(*piece) + j;
+				square_count++;
+		}
+	}
+	
+	}
 }
