@@ -23,7 +23,7 @@
 #define DUMPED_PIECE 3
 #define COLOR_DUMPED 7
 #define EMPTY_SPACE 0
-#define DELAY 100
+#define DELAY 150
 
 int board[BOARD_HEIGHT][BOARD_WIDTH] = {{0}};
 
@@ -63,6 +63,7 @@ void rotate(Piece *piece);
 void number_active_fields(Piece *piece);
 void draw_all(Piece *piece);
 void game_loop(Piece *piece);
+void fast_fall(Piece *piece);
 
 int main(int argc, char *argv[])
 {
@@ -255,10 +256,8 @@ void print_board() {
 
 bool check_collision_bottom(Piece *piece)
 {
-	for (int i = 0; i < PIECE_SIZE; i++){
-		if(find_bottom_y(*piece) == BOARD_HEIGHT - 1){
-			return true;
-		}
+	if(find_bottom_y(*piece) == BOARD_HEIGHT - 1){
+		return true;
 	}
 	for (int i = 0; i < PIECE_SIZE; i++) {
         for (int j = 0; j < PIECE_SIZE; j++) {
@@ -335,6 +334,9 @@ void input(Piece *piece)
 		case SDLK_RIGHT:
 			move_x(piece, 1);
 			break;
+		case SDLK_DOWN:
+			fast_fall(piece);
+			break;
 	}
 
 }
@@ -398,14 +400,43 @@ void move_x(Piece *piece, int change_x)
     add_on_board(*piece);
 }
 
+bool can_rotate(Piece *piece)
+{
+    int new_rot = (piece->rotation + 1) % ROTATIONS;
+    Piece rotated = init_piece(piece->shape, new_rot, piece->color);
+
+    rotated.x = piece->x;
+    rotated.y = piece->y;
+
+    // Check if rotated piece exceeds the board's boundaries
+    if (find_right(&rotated) >= BOARD_WIDTH || find_left(&rotated) < 0 || find_bottom_y(rotated) >= BOARD_HEIGHT) {
+        return false; // Rotation exceeds bounds
+    }
+
+    // Check if rotated piece overlaps with existing pieces on the board
+    for (int i = 0; i < PIECE_SIZE; i++) {
+        for (int j = 0; j < PIECE_SIZE; j++) {
+            if (rotated.fields[i][j] && board[rotated.y + i][rotated.x + j] == DUMPED_PIECE) {
+                return false; // Collision detected
+            }
+        }
+    }
+
+    return true; // Rotation is allowed
+}
+
 void rotate(Piece *piece)
 {
-	int new_rot = (piece->rotation + 1) % ROTATIONS;
-	Piece rotated = init_piece(piece->shape, new_rot, piece->color);
+    if (can_rotate(piece)) {
+        int new_rot = (piece->rotation + 1) % ROTATIONS;
+        Piece rotated = init_piece(piece->shape, new_rot, piece->color);
 
-	*piece = rotated;
+        rotated.x = piece->x;
+        rotated.y = piece->y;
 
-	add_on_board(*piece);
+        *piece = rotated;
+        add_on_board(*piece);
+    }
 }
 
 void number_active_fields(Piece *piece)
@@ -447,4 +478,12 @@ void game_loop(Piece *piece)
 		}
 		check_and_add_new_piece(piece);
 	}
+}
+
+void fast_fall(Piece *piece)
+{
+	while (!check_collision_bottom(piece)){
+		move_Y(piece);
+	}
+	move_Y(piece);
 }
