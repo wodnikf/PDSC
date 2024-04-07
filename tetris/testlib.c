@@ -23,6 +23,7 @@
 #define DUMPED_PIECE 3
 #define COLOR_DUMPED 7
 #define EMPTY_SPACE 0
+#define DELAY 100
 
 int board[BOARD_HEIGHT][BOARD_WIDTH] = {{0}};
 
@@ -60,6 +61,8 @@ void change_fields_into_dump(Piece *piece);
 void check_and_add_new_piece(Piece *piece);
 void rotate(Piece *piece);
 void number_active_fields(Piece *piece);
+void draw_all(Piece *piece);
+void game_loop(Piece *piece);
 
 int main(int argc, char *argv[])
 {
@@ -72,30 +75,30 @@ int main(int argc, char *argv[])
 
 	Piece current_piece;
 	random_piece(&current_piece);
-	current_piece = init_piece(6, 0, 2);
+	//current_piece = init_piece(6, 0, 2);
+	game_loop(&current_piece);
+	// while (true)
+	// {
+	// 	draw_screen();
+		
+	// 	draw_piece(current_piece);
+	// 	draw_grid();
+		
+	// 	print_board();
+	// 	// printf("%d \n", find_right(&current_piece));
+	// 	// printf("%d \n", current_piece.number_active_fields[0]);
+	// 	input(&current_piece);
+	// 	move_Y(&current_piece);
+	// 	draw_dumped_pieces();
+	// 	check_and_add_new_piece(&current_piece);
+	// 	SDL_Delay(250);
+		
+	// 	gfx_updateScreen();
 
-	while (true)
-	{
-		draw_screen();
-		
-		draw_piece(current_piece);
-		draw_grid();
-		
-		print_board();
-		// printf("%d \n", find_right(&current_piece));
-		// printf("%d \n", current_piece.number_active_fields[0]);
-		input(&current_piece);
-		move_Y(&current_piece);
-		draw_dumped_pieces();
-		check_and_add_new_piece(&current_piece);
-		SDL_Delay(250);
-		
-		gfx_updateScreen();
-
-		if (gfx_pollkey() == SDLK_ESCAPE){
-			break;
-        }
-	}
+	// 	if (gfx_pollkey() == SDLK_ESCAPE){
+	// 		break;
+    //     }
+	// }
 	
 	return 0;
 }
@@ -344,7 +347,7 @@ bool check_collision_right(Piece *piece)
 
 	for (int i = 0; i < PIECE_SIZE; i++){
 		for (int j = 0; j < PIECE_SIZE; j++){
-			if (piece->fields[i][j] && board[piece->y + i][piece->x + j] == DUMPED_PIECE){
+			if (piece->fields[i][j] && board[piece->y + i][piece->x + j + 1] == DUMPED_PIECE){
 				return true;
 			}
 		}
@@ -419,5 +422,29 @@ void number_active_fields(Piece *piece)
 		}
 	}
 	
+	}
+}
+
+void draw_all(Piece *piece)
+{
+	draw_screen();
+	draw_grid();
+	draw_piece(*piece);
+	draw_dumped_pieces();
+	gfx_updateScreen();
+}
+
+void game_loop(Piece *piece)
+{
+	int counter = 0;
+	while(true){
+		draw_all(piece);
+		input(piece);
+
+		if (counter++ >= DELAY){
+			counter = 0;
+			move_Y(piece);
+		}
+		check_and_add_new_piece(piece);
 	}
 }
