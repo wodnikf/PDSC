@@ -47,7 +47,7 @@ typedef struct
 	int shape_index;
 	int color_index;
 	int rotation_index;
-}Information;
+} Information;
 
 Information array[2];
 
@@ -80,12 +80,12 @@ void draw_all(Piece *piece);
 void game_loop(Piece *piece);
 void fast_fall(Piece *piece);
 void check_and_clear_rows();
-void find_rot_axis(Piece *piece);
 bool check_lose();
 void draw_end_screen();
 int find_rot_axis_x(Piece *piece);
 int find_rot_axis_y(Piece *piece);
 void next_piece(Piece *piece);
+void move_y_to_rotate(Piece *piece, int change_y);
 
 int main(int argc, char *argv[])
 {
@@ -101,9 +101,8 @@ int main(int argc, char *argv[])
 	array[0].color_index = rand() % COLORS + 1;
 
 	Piece current_piece;
-	
+
 	next_piece(&current_piece);
-	//random_piece(&current_piece);
 
 	game_loop(&current_piece);
 
@@ -148,9 +147,8 @@ Piece init_piece(int shape, int rotation, int color)
 		}
 	}
 
-	// piece.x = rand() % BOARD_WIDTH - find_left(piece);
 	piece.x = BOARD_WIDTH / 2 - 1;
-	piece.y = 5;
+	piece.y = 0;
 
 	add_on_board(piece);
 
@@ -163,9 +161,6 @@ void random_piece()
 	array[1].shape_index = rand() % SHAPES;
 	array[1].rotation_index = rand() % ROTATIONS;
 	array[1].color_index = rand() % COLORS + 1;
-	
-
-	//*piece = init_piece(array[0].shape_index, array[0].rotation_index, array[0].color_index);
 }
 
 void add_on_board(Piece piece)
@@ -195,10 +190,10 @@ int find_right(Piece *piece)
 		for (int col = PIECE_SIZE - 1; col >= 0; col--)
 		{
 			if (piece->fields[row][col])
-			{ 
+			{
 				if (col > temp)
 				{
-					temp = col; 
+					temp = col;
 				}
 				break;
 			}
@@ -367,13 +362,14 @@ void draw_next(Piece *piece)
 
 			to_draw.fields[row][col] = pieces[array[1].shape_index][array[1].rotation_index][row][col];
 
-				if (to_draw.fields[row][col] == 1)
-					{
-						draw_square(BOARD_WIDTH + 5 + col , 5 + row, array[1].color_index);
-					}
-				else if(to_draw.fields[row][col] == 2){
-					draw_square(BOARD_WIDTH + 5 + col , 5 + row, YELLOW);
-				}
+			if (to_draw.fields[row][col] == 1)
+			{
+				draw_square(BOARD_WIDTH + 5 + col, 5 + row, array[1].color_index);
+			}
+			else if (to_draw.fields[row][col] == 2)
+			{
+				draw_square(BOARD_WIDTH + 5 + col, 5 + row, YELLOW);
+			}
 		}
 	}
 }
@@ -451,10 +447,10 @@ bool check_collision_left(Piece *piece)
 
 void move_x(Piece *piece, int change_x)
 {
-	
+
 	if (check_collision_right(piece) && change_x == 1)
 	{
-		return; 
+		return;
 	}
 	if (check_collision_left(piece) && change_x == -1)
 	{
@@ -479,26 +475,63 @@ void move_x(Piece *piece, int change_x)
 
 int find_rot_axis_x(Piece *piece)
 {
-    for (int i = 0; i < PIECE_SIZE; i++) {
-        for (int j = 0; j < PIECE_SIZE; j++) {
-            if (piece->fields[i][j] == ROTATION_AXIS) {
-                return i + piece->x;
-            }
-        }
-    }
+	for (int i = 0; i < PIECE_SIZE; i++)
+	{
+		for (int j = 0; j < PIECE_SIZE; j++)
+		{
+			if (piece->fields[i][j] == ROTATION_AXIS)
+			{
+				return j + piece->x;
+			}
+		}
+	}
 	return 0;
 }
 
 int find_rot_axis_y(Piece *piece)
 {
-    for (int i = 0; i < PIECE_SIZE; i++) {
-        for (int j = 0; j < PIECE_SIZE; j++) {
-            if (piece->fields[i][j] == ROTATION_AXIS) {
-                return j + piece->y;
-            }
-        }
-    }
+	for (int i = 0; i < PIECE_SIZE; i++)
+	{
+		for (int j = 0; j < PIECE_SIZE; j++)
+		{
+			if (piece->fields[i][j] == ROTATION_AXIS)
+			{
+				return i + piece->y;
+			}
+		}
+	}
 	return 0;
+}
+
+void move_y_to_rotate(Piece *piece, int change_y)
+{
+	for (int i = 0; i < PIECE_SIZE; i++)
+	{
+		for (int j = 0; j < PIECE_SIZE; j++)
+		{
+			if (piece->fields[i][j])
+			{
+				board[piece->y + i][piece->x + j] = EMPTY_SPACE;
+			}
+		}
+	}
+
+	piece->y += change_y;
+
+}
+void move_x_to_rotate(Piece *piece, int change_x)
+{
+	for (int i = 0; i < PIECE_SIZE; i++)
+	{
+		for (int j = 0; j < PIECE_SIZE; j++)
+		{
+			if (piece->fields[i][j])
+			{
+				board[piece->y + i][piece->x+j] = EMPTY_SPACE;
+			}
+		}
+	}
+	piece->x += change_x;
 }
 
 bool can_rotate(Piece *piece)
@@ -509,10 +542,22 @@ bool can_rotate(Piece *piece)
 	rotated.x = piece->x;
 	rotated.y = piece->y;
 
+	int diff_x = find_rot_axis_x(piece) - find_rot_axis_x(&rotated);
+	int diff_y = find_rot_axis_y(piece) - find_rot_axis_y(&rotated);
+
+	if (diff_x){
+		move_x_to_rotate(&rotated, diff_x);
+	}
+	if (diff_y){
+		move_y_to_rotate(&rotated, diff_y);
+	}
+
+
 	if (find_right(&rotated) >= BOARD_WIDTH || find_left(&rotated) < 0 || find_bottom_y(rotated) >= BOARD_HEIGHT)
 	{
 		return false;
 	}
+	
 
 	for (int i = 0; i < PIECE_SIZE; i++)
 	{
@@ -537,6 +582,17 @@ void rotate(Piece *piece)
 
 		rotated.x = piece->x;
 		rotated.y = piece->y;
+
+		int diff_x = find_rot_axis_x(piece) - find_rot_axis_x(&rotated);
+		int diff_y = find_rot_axis_y(piece) - find_rot_axis_y(&rotated);
+
+		if (diff_x){
+			move_x_to_rotate(&rotated, diff_x);
+		}
+
+		if (diff_y){
+			move_y_to_rotate(&rotated, diff_y);
+		}
 
 		*piece = rotated;
 		add_on_board(*piece);
@@ -580,6 +636,7 @@ void game_loop(Piece *piece)
 		draw_all(piece);
 		input(piece);
 
+
 		if (counter++ >= DELAY)
 		{
 			counter = 0;
@@ -587,10 +644,10 @@ void game_loop(Piece *piece)
 		}
 
 		if (check_lose(piece))
-        {
+		{
 			draw_end_screen();
 			exit(1);
-        }
+		}
 
 		check_and_clear_rows();
 
@@ -609,14 +666,17 @@ void fast_fall(Piece *piece)
 
 void check_and_clear_rows()
 {
-	 for (int i = BOARD_HEIGHT - 1; i >= 0; i--) {
-        bool is_full = true;
-        for (int j = 0; j < BOARD_WIDTH; j++) {
-            if (board[i][j] != DUMPED_PIECE) {
-                is_full = false;
-                break;
-            }
-        }
+	for (int i = BOARD_HEIGHT - 1; i >= 0; i--)
+	{
+		bool is_full = true;
+		for (int j = 0; j < BOARD_WIDTH; j++)
+		{
+			if (board[i][j] != DUMPED_PIECE)
+			{
+				is_full = false;
+				break;
+			}
+		}
 		if (is_full)
 		{
 			for (int k = i; k > 0; k--)
@@ -636,15 +696,15 @@ void check_and_clear_rows()
 
 bool check_lose()
 {
-    for (int i = PIECE_SIZE - 1; i < PIECE_SIZE + 3; i++)
-    {
+	for (int i = PIECE_SIZE - 1; i < PIECE_SIZE + 3; i++)
+	{
 
 		if (board[0][i] == DUMPED_PIECE)
 		{
 			return true;
 		}
-    }
-    return false;
+	}
+	return false;
 }
 
 void draw_end_screen()
@@ -652,7 +712,7 @@ void draw_end_screen()
 	draw_screen();
 
 	char *message = "GAME OVER";
-	
+
 	int lenght_message = strlen(message);
 
 	gfx_textout(SCREEN_WIDTH / 2 - lenght_message, SCREEN_HEIGHT / 2, message, WHITE);
@@ -660,11 +720,9 @@ void draw_end_screen()
 	SDL_Delay(5000);
 }
 
-void next_piece(Piece *piece) {
-
-    *piece = init_piece(array[0].shape_index, array[0].rotation_index, array[0].color_index);
+void next_piece(Piece *piece)
+{
+	*piece = init_piece(array[0].shape_index, array[0].rotation_index, array[0].color_index);
 	random_piece(array);
-	printf("%d %d\n" , array[0].shape_index, array[1].shape_index);
 	array[0] = array[1];
 }
-
