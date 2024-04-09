@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <time.h>
+#include <string.h>
 
 #define SCREEN_HEIGHT gfx_screenHeight()
 #define SCREEN_WIDTH gfx_screenWidth()
@@ -13,13 +14,14 @@
 #define BOARD_HEIGHT 20
 #define PIECE_SIZE 4
 #define ROTATIONS 4
-#define COLORS 6
+#define COLORS 5
 #define SHAPES 7
 
 #define SQUARE_SIZE SCREEN_HEIGHT / (BOARD_HEIGHT + 5)
 #define BOARD_X ((SCREEN_WIDTH - SQUARE_SIZE * BOARD_WIDTH) / 2)
 #define BOARD_Y ((SCREEN_HEIGHT - SQUARE_SIZE * BOARD_HEIGHT) / 2)
 #define START_X (BOARD_WIDTH / 2 - 1)
+#define ROTATION_AXIS 2
 #define DUMPED_PIECE 3
 #define COLOR_DUMPED 7
 #define EMPTY_SPACE 0
@@ -69,6 +71,9 @@ void draw_all(Piece *piece);
 void game_loop(Piece *piece);
 void fast_fall(Piece *piece);
 void check_and_clear_rows();
+void find_rot_axis(Piece *piece);
+bool check_lose();
+void draw_end_screen();
 
 int main(int argc, char *argv[])
 {
@@ -82,6 +87,7 @@ int main(int argc, char *argv[])
 	Piece current_piece;
 	random_piece(&current_piece);
 
+	
 	game_loop(&current_piece);
 
 	return 0;
@@ -128,6 +134,7 @@ Piece init_piece(int shape, int rotation, int color)
 	// piece.x = rand() % BOARD_WIDTH - find_left(piece);
 	piece.x = BOARD_WIDTH / 2 - 1;
 	piece.y = -find_top(piece);
+
 	number_active_fields(&piece);
 
 	add_on_board(piece);
@@ -165,22 +172,21 @@ int find_left(Piece *piece)
 
 int find_right(Piece *piece)
 {
-	int temp = -1; // Initialize temp to -1, indicating no active cells found yet
+	int temp = -1;
 	for (int row = 0; row < PIECE_SIZE; row++)
 	{
 		for (int col = PIECE_SIZE - 1; col >= 0; col--)
 		{
 			if (piece->fields[row][col])
-			{ // If the cell is active
+			{ 
 				if (col > temp)
-				{				// If the column index is greater than current temp
-					temp = col; // Update temp with the new column index
+				{
+					temp = col; 
 				}
-				break; // Break out of the inner loop to move to the next row
+				break;
 			}
 		}
 	}
-	// Adjust the rightmost index by adding the piece's x position
 	return temp + piece->x;
 }
 
@@ -221,13 +227,13 @@ void draw_piece(Piece piece)
 	{
 		for (int col = 0; col < PIECE_SIZE; col++)
 		{
-			if (piece.fields[row][col] == 1 || piece.fields[row][col] == 2)
+			if (piece.fields[row][col] == 1)
 			{
 				draw_square(piece.x + col, piece.y + row, piece.color);
 			}
-			else if (piece.fields[row][col] == 3)
+			else if (piece.fields[row][col] == 2)
 			{
-				draw_square(piece.x + col, piece.y + row, COLOR_DUMPED);
+				draw_square(piece.x + col, piece.y + row, YELLOW);
 			}
 		}
 	}
@@ -400,11 +406,9 @@ bool check_collision_right(Piece *piece)
 
 bool check_collision_left(Piece *piece)
 {
-	// Check if the piece is already at the leftmost position
 	if (piece->x <= 0)
 		return true;
 
-	// Check if there's a collision with other pieces
 	for (int i = 0; i < PIECE_SIZE; i++)
 	{
 		for (int j = 0; j < PIECE_SIZE; j++)
@@ -420,14 +424,14 @@ bool check_collision_left(Piece *piece)
 
 void move_x(Piece *piece, int change_x)
 {
-	// Temporarily remove the piece from the board
+	
 	if (check_collision_right(piece) && change_x == 1)
 	{
-		return; // If collision with the right side, do not move right
+		return; 
 	}
 	if (check_collision_left(piece) && change_x == -1)
 	{
-		return; // If collision with the left side, do not move left
+		return;
 	}
 
 	for (int i = 0; i < PIECE_SIZE; i++)
@@ -441,11 +445,33 @@ void move_x(Piece *piece, int change_x)
 		}
 	}
 
-	// Update the piece position
 	piece->x += change_x;
 
-	// Add the piece back to the board
 	add_on_board(*piece);
+}
+
+int find_rot_axis_x(Piece *piece)
+{
+    for (int i = 0; i < PIECE_SIZE; i++) {
+        for (int j = 0; j < PIECE_SIZE; j++) {
+            if (piece->fields[i][j] == ROTATION_AXIS) {
+                return i;
+            }
+        }
+    }
+	return 0;
+}
+
+int find_rot_axis_y(Piece *piece)
+{
+    for (int i = 0; i < PIECE_SIZE; i++) {
+        for (int j = 0; j < PIECE_SIZE; j++) {
+            if (piece->fields[i][j] == ROTATION_AXIS) {
+                return j;
+            }
+        }
+    }
+	return 0;
 }
 
 bool can_rotate(Piece *piece)
@@ -532,6 +558,13 @@ void game_loop(Piece *piece)
 			counter = 0;
 			move_Y(piece);
 		}
+
+		if (check_lose(piece))
+        {
+			draw_end_screen();
+			exit(1);
+        }
+
 		check_and_clear_rows();
 
 		check_and_add_new_piece(piece);
@@ -572,4 +605,30 @@ void check_and_clear_rows()
 			}
 		}
 	}
+}
+
+bool check_lose()
+{
+    for (int i = PIECE_SIZE - 1; i < PIECE_SIZE + 3; i++)
+    {
+
+		if (board[0][i] == DUMPED_PIECE)
+		{
+			return true;
+		}
+    }
+    return false;
+}
+
+void draw_end_screen()
+{
+	draw_screen();
+
+	char *message = "GAME OVER";
+	
+	int lenght_message = strlen(message);
+
+	gfx_textout(SCREEN_WIDTH / 2 - lenght_message, SCREEN_HEIGHT / 2, message, WHITE);
+	gfx_updateScreen();
+	SDL_Delay(5000);
 }
