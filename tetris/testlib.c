@@ -42,11 +42,20 @@ typedef struct
 	bool is_dump;
 } Piece;
 
+typedef struct
+{
+	int shape_index;
+	int color_index;
+	int rotation_index;
+}Information;
+
+Information array[2];
+
 void draw_screen();
 void draw_grid();
 void draw_square(int x_pos, int y_pos, int color);
 Piece init_piece(int shape, int rotation, int color);
-void random_piece(Piece *piece);
+void random_piece();
 void add_on_board(Piece piece);
 int find_left(Piece *piece);
 int find_right(Piece *piece);
@@ -74,6 +83,9 @@ void check_and_clear_rows();
 void find_rot_axis(Piece *piece);
 bool check_lose();
 void draw_end_screen();
+int find_rot_axis_x(Piece *piece);
+int find_rot_axis_y(Piece *piece);
+void next_piece(Piece *piece);
 
 int main(int argc, char *argv[])
 {
@@ -84,10 +96,15 @@ int main(int argc, char *argv[])
 	}
 	srand(time(NULL));
 
-	Piece current_piece;
-	random_piece(&current_piece);
+	array[0].shape_index = rand() % SHAPES;
+	array[0].rotation_index = rand() % ROTATIONS;
+	array[0].color_index = rand() % COLORS + 1;
 
+	Piece current_piece;
 	
+	next_piece(&current_piece);
+	//random_piece(&current_piece);
+
 	game_loop(&current_piece);
 
 	return 0;
@@ -133,22 +150,22 @@ Piece init_piece(int shape, int rotation, int color)
 
 	// piece.x = rand() % BOARD_WIDTH - find_left(piece);
 	piece.x = BOARD_WIDTH / 2 - 1;
-	piece.y = -find_top(piece);
-
-	number_active_fields(&piece);
+	piece.y = 5;
 
 	add_on_board(piece);
 
 	return piece;
 }
 
-void random_piece(Piece *piece)
+void random_piece()
 {
-	int piece_index = rand() % SHAPES;
-	int rotation_index = rand() % ROTATIONS;
-	int color_index = rand() % COLORS + 1;
 
-	*piece = init_piece(piece_index, rotation_index, color_index);
+	array[1].shape_index = rand() % SHAPES;
+	array[1].rotation_index = rand() % ROTATIONS;
+	array[1].color_index = rand() % COLORS + 1;
+	
+
+	//*piece = init_piece(array[0].shape_index, array[0].rotation_index, array[0].color_index);
 }
 
 void add_on_board(Piece piece)
@@ -192,20 +209,19 @@ int find_right(Piece *piece)
 
 int find_top(Piece piece)
 {
-	int temp = PIECE_SIZE;
 	for (int row = 0; row < PIECE_SIZE; row++)
 	{
 		for (int col = 0; col < PIECE_SIZE; col++)
 		{
-			if (piece.fields[row][col] && (row < temp))
+			if (piece.fields[row][col])
 			{
-				temp = row;
-				break;
+				return row + piece.y;
 			}
 		}
 	}
-	return temp;
+	return 0;
 }
+
 int find_bottom_y(Piece piece)
 {
 	for (int row = PIECE_SIZE - 1; row >= 0; row--)
@@ -339,14 +355,25 @@ void change_fields_into_dump(Piece *piece)
 
 void draw_next(Piece *piece)
 {
-	for (int i = 0; i < PIECE_SIZE; i++)
+	Piece to_draw;
+	to_draw.color = array->color_index;
+	to_draw.rotation = array->rotation_index;
+	to_draw.shape = array->shape_index;
+
+	for (int row = 0; row < PIECE_SIZE; row++)
 	{
-		for (int j = 0; j < PIECE_SIZE; j++)
+		for (int col = 0; col < PIECE_SIZE; col++)
 		{
-			if (piece->fields[i][j])
-			{
-				draw_square(BOARD_WIDTH + 5 + i, 5 + j, piece->color);
-			}
+
+			to_draw.fields[row][col] = pieces[array[1].shape_index][array[1].rotation_index][row][col];
+
+				if (to_draw.fields[row][col] == 1)
+					{
+						draw_square(BOARD_WIDTH + 5 + col , 5 + row, array[1].color_index);
+					}
+				else if(to_draw.fields[row][col] == 2){
+					draw_square(BOARD_WIDTH + 5 + col , 5 + row, YELLOW);
+				}
 		}
 	}
 }
@@ -356,7 +383,7 @@ void check_and_add_new_piece(Piece *piece)
 	if (piece->is_dump)
 	{
 		add_on_board(*piece);
-		random_piece(piece);
+		next_piece(piece);
 	}
 }
 
@@ -455,7 +482,7 @@ int find_rot_axis_x(Piece *piece)
     for (int i = 0; i < PIECE_SIZE; i++) {
         for (int j = 0; j < PIECE_SIZE; j++) {
             if (piece->fields[i][j] == ROTATION_AXIS) {
-                return i;
+                return i + piece->x;
             }
         }
     }
@@ -467,7 +494,7 @@ int find_rot_axis_y(Piece *piece)
     for (int i = 0; i < PIECE_SIZE; i++) {
         for (int j = 0; j < PIECE_SIZE; j++) {
             if (piece->fields[i][j] == ROTATION_AXIS) {
-                return j;
+                return j + piece->y;
             }
         }
     }
@@ -556,7 +583,7 @@ void game_loop(Piece *piece)
 		if (counter++ >= DELAY)
 		{
 			counter = 0;
-			move_Y(piece);
+			//move_Y(piece);
 		}
 
 		if (check_lose(piece))
@@ -632,3 +659,12 @@ void draw_end_screen()
 	gfx_updateScreen();
 	SDL_Delay(5000);
 }
+
+void next_piece(Piece *piece) {
+
+    *piece = init_piece(array[0].shape_index, array[0].rotation_index, array[0].color_index);
+	random_piece(array);
+	printf("%d %d\n" , array[0].shape_index, array[1].shape_index);
+	array[0] = array[1];
+}
+
