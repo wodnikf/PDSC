@@ -1,8 +1,6 @@
 #include "primlib.h"
 #include "pieces.inl"
 #include <stdlib.h>
-#include <math.h>
-#include <unistd.h>
 #include <stdbool.h>
 #include <time.h>
 #include <string.h>
@@ -65,34 +63,29 @@ int find_top(Piece piece);
 int find_bottom_y(Piece piece);
 void draw_piece(Piece piece);
 void draw_dumped_pieces();
-void print_board();
 bool check_collision_bottom(Piece *piece);
+void remove_spaces(Piece *piece);
 void move_Y(Piece *piece);
-void input(Piece *piece);
-void move_x(Piece *piece, int change_x);
-bool check_collision_right(Piece *piece);
-bool check_collision_left(Piece *piece);
 void change_fields_into_dump(Piece *piece);
 void draw_next(Piece *piece);
 void check_and_add_new_piece(Piece *piece);
-void rotate(Piece *piece);
+void input(Piece *piece);
+bool check_collision_right(Piece *piece);
+bool check_collision_left(Piece *piece);
+void move_x(Piece *piece, int change_x);
+void find_rot_axis(Piece *piece);
 bool can_rotate(Piece *piece, int delta_x, int delta_y);
+void rotate(Piece *piece);
 void draw_all(Piece *piece);
 void game_loop(Piece *piece);
 void fast_fall(Piece *piece);
 void check_and_clear_rows();
 bool check_lose();
 void draw_end_screen();
-int find_rot_axis_x(Piece *piece);
-int find_rot_axis_y(Piece *piece);
 void next_piece(Piece *piece);
-void move_y_to_rotate(Piece *piece, int change_y);
-void find_rot_axis(Piece *piece);
-void remove_spaces(Piece *piece);
 
 int main(int argc, char *argv[])
 {
-
 	if (gfx_init())
 	{
 		exit(3);
@@ -292,15 +285,15 @@ bool check_collision_bottom(Piece *piece)
 void remove_spaces(Piece *piece)
 {
 	for (int i = 0; i < PIECE_SIZE; i++)
+	{
+		for (int j = 0; j < PIECE_SIZE; j++)
 		{
-			for (int j = 0; j < PIECE_SIZE; j++)
+			if (piece->fields[i][j])
 			{
-				if (piece->fields[i][j])
-				{
-					board[piece->y + i][piece->x + j] = EMPTY_SPACE;
-				}
+				board[piece->y + i][piece->x + j] = EMPTY_SPACE;
 			}
 		}
+	}
 }
 
 void move_Y(Piece *piece)
@@ -427,7 +420,7 @@ bool check_collision_right(Piece *piece)
 bool check_collision_left(Piece *piece)
 {
 	if (piece->x <= 0)
-	
+
 	{
 		return true;
 	}
@@ -481,30 +474,30 @@ void find_rot_axis(Piece *piece)
 
 bool can_rotate(Piece *piece, int delta_x, int delta_y)
 {
-    Piece rotated = *piece;
-    rotated.rotation = (rotated.rotation + 1) % ROTATIONS;
+	Piece rotated = *piece;
+	rotated.rotation = (rotated.rotation + 1) % ROTATIONS;
 
-    rotated.x += delta_x;
-    rotated.y += delta_y;
+	rotated.x += delta_x;
+	rotated.y += delta_y;
 
-    if (rotated.x < 0 || rotated.x >= BOARD_WIDTH || rotated.y >= BOARD_HEIGHT || rotated.y < 0)
-        return false;
+	if (rotated.x < 0 || rotated.x >= BOARD_WIDTH || rotated.y >= BOARD_HEIGHT || rotated.y < 0)
+		return false;
 
-    for (int i = 0; i < PIECE_SIZE; i++)
-    {
-        for (int j = 0; j < PIECE_SIZE; j++)
-        {
-            if (rotated.fields[i][j] && board[rotated.y + i][rotated.x + j] == DUMPED_PIECE)
-            {
-                return false;
-            }
-        }
-    }
+	for (int i = 0; i < PIECE_SIZE; i++)
+	{
+		for (int j = 0; j < PIECE_SIZE; j++)
+		{
+			if (rotated.fields[i][j] && board[rotated.y + i][rotated.x + j] == DUMPED_PIECE)
+			{
+				return false;
+			}
+		}
+	}
 
-    if (find_right(&rotated) >= BOARD_WIDTH || find_left(&rotated) < 0)
-        return false;
+	if (find_right(&rotated) >= BOARD_WIDTH || find_left(&rotated) < 0)
+		return false;
 
-    return true;
+	return true;
 }
 
 void rotate(Piece *piece)
@@ -519,8 +512,9 @@ void rotate(Piece *piece)
 
 	rotated.x -= -diff_x;
 	rotated.y -= -diff_y;
-	
-	for (int i = 0; i < PIECE_SIZE; i ++){
+
+	for (int i = 0; i < PIECE_SIZE; i++)
+	{
 		if (find_left(&rotated) <= 0)
 		{
 			rotated.x = 0;
@@ -531,15 +525,18 @@ void rotate(Piece *piece)
 			rotated.x -= 1;
 			diff_x = 0;
 		}
-		if (find_top(rotated) <= 0 ){
+		if (find_top(rotated) <= 0)
+		{
 			rotated.y += 1;
 		}
-		if (find_bottom_y(rotated) >= BOARD_HEIGHT - 1){
+		if (find_bottom_y(rotated) >= BOARD_HEIGHT - 1)
+		{
 			rotated.y -= 1;
 		}
 	}
-	
-	if (can_rotate(&rotated, diff_x, diff_y)){
+
+	if (can_rotate(&rotated, diff_x, diff_y))
+	{
 		*piece = rotated;
 	}
 
@@ -564,7 +561,7 @@ void game_loop(Piece *piece)
 		draw_all(piece);
 		input(piece);
 
-		if (counter++ >= DELAY + 100)
+		if (counter++ >= DELAY)
 		{
 			counter = 0;
 			move_Y(piece);
