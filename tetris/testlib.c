@@ -40,6 +40,8 @@ typedef struct
 	int x;
 	int y;
 	bool is_dump;
+	int rot_axis_x;
+	int rot_axis_y;
 } Piece;
 
 typedef struct
@@ -74,8 +76,7 @@ void change_fields_into_dump(Piece *piece);
 void draw_next(Piece *piece);
 void check_and_add_new_piece(Piece *piece);
 void rotate(Piece *piece);
-bool can_rotate(Piece *piece);
-void number_active_fields(Piece *piece);
+bool can_rotate(Piece *piece, int delta_x, int delta_y);
 void draw_all(Piece *piece);
 void game_loop(Piece *piece);
 void fast_fall(Piece *piece);
@@ -86,6 +87,8 @@ int find_rot_axis_x(Piece *piece);
 int find_rot_axis_y(Piece *piece);
 void next_piece(Piece *piece);
 void move_y_to_rotate(Piece *piece, int change_y);
+void find_rot_axis(Piece *piece);
+void remove_spaces(Piece *piece);
 
 int main(int argc, char *argv[])
 {
@@ -149,6 +152,8 @@ Piece init_piece(int shape, int rotation, int color)
 
 	piece.x = BOARD_WIDTH / 2 - 1;
 	piece.y = 0;
+
+	find_rot_axis(&piece);
 
 	add_on_board(piece);
 
@@ -264,19 +269,6 @@ void draw_dumped_pieces()
 	}
 }
 
-void print_board()
-{
-	for (int y = 0; y < BOARD_HEIGHT; y++)
-	{
-		for (int x = 0; x < BOARD_WIDTH; x++)
-		{
-			printf("%d ", board[y][x]);
-		}
-		printf("\n");
-	}
-	printf("\n");
-}
-
 bool check_collision_bottom(Piece *piece)
 {
 	if (find_bottom_y(*piece) == BOARD_HEIGHT - 1)
@@ -297,12 +289,9 @@ bool check_collision_bottom(Piece *piece)
 	return false;
 }
 
-void move_Y(Piece *piece)
+void remove_spaces(Piece *piece)
 {
-	bool can_dump = check_collision_bottom(piece);
-	if (!can_dump)
-	{
-		for (int i = 0; i < PIECE_SIZE; i++)
+	for (int i = 0; i < PIECE_SIZE; i++)
 		{
 			for (int j = 0; j < PIECE_SIZE; j++)
 			{
@@ -312,6 +301,14 @@ void move_Y(Piece *piece)
 				}
 			}
 		}
+}
+
+void move_Y(Piece *piece)
+{
+	bool can_dump = check_collision_bottom(piece);
+	if (!can_dump)
+	{
+		remove_spaces(piece);
 		piece->y++;
 	}
 
@@ -430,7 +427,10 @@ bool check_collision_right(Piece *piece)
 bool check_collision_left(Piece *piece)
 {
 	if (piece->x <= 0)
+	
+	{
 		return true;
+	}
 
 	for (int i = 0; i < PIECE_SIZE; i++)
 	{
@@ -457,23 +457,14 @@ void move_x(Piece *piece, int change_x)
 		return;
 	}
 
-	for (int i = 0; i < PIECE_SIZE; i++)
-	{
-		for (int j = 0; j < PIECE_SIZE; j++)
-		{
-			if (piece->fields[i][j])
-			{
-				board[piece->y + i][piece->x + j] = EMPTY_SPACE;
-			}
-		}
-	}
+	remove_spaces(piece);
 
 	piece->x += change_x;
 
 	add_on_board(*piece);
 }
 
-int find_rot_axis_x(Piece *piece)
+void find_rot_axis(Piece *piece)
 {
 	for (int i = 0; i < PIECE_SIZE; i++)
 	{
@@ -481,141 +472,78 @@ int find_rot_axis_x(Piece *piece)
 		{
 			if (piece->fields[i][j] == ROTATION_AXIS)
 			{
-				return j + piece->x;
+				piece->rot_axis_y = i + piece->y;
+				piece->rot_axis_x = j + piece->x;
 			}
 		}
 	}
-	return 0;
 }
 
-int find_rot_axis_y(Piece *piece)
+bool can_rotate(Piece *piece, int delta_x, int delta_y)
 {
-	for (int i = 0; i < PIECE_SIZE; i++)
-	{
-		for (int j = 0; j < PIECE_SIZE; j++)
-		{
-			if (piece->fields[i][j] == ROTATION_AXIS)
-			{
-				return i + piece->y;
-			}
-		}
-	}
-	return 0;
-}
+    Piece rotated = *piece;
+    rotated.rotation = (rotated.rotation + 1) % ROTATIONS;
 
-void move_y_to_rotate(Piece *piece, int change_y)
-{
-	for (int i = 0; i < PIECE_SIZE; i++)
-	{
-		for (int j = 0; j < PIECE_SIZE; j++)
-		{
-			if (piece->fields[i][j])
-			{
-				board[piece->y + i][piece->x + j] = EMPTY_SPACE;
-			}
-		}
-	}
+    rotated.x += delta_x;
+    rotated.y += delta_y;
 
-	piece->y += change_y;
+    if (rotated.x < 0 || rotated.x >= BOARD_WIDTH || rotated.y >= BOARD_HEIGHT || rotated.y < 0)
+        return false;
 
-}
-void move_x_to_rotate(Piece *piece, int change_x)
-{
-	for (int i = 0; i < PIECE_SIZE; i++)
-	{
-		for (int j = 0; j < PIECE_SIZE; j++)
-		{
-			if (piece->fields[i][j])
-			{
-				board[piece->y + i][piece->x+j] = EMPTY_SPACE;
-			}
-		}
-	}
-	piece->x += change_x;
-}
+    for (int i = 0; i < PIECE_SIZE; i++)
+    {
+        for (int j = 0; j < PIECE_SIZE; j++)
+        {
+            if (rotated.fields[i][j] && board[rotated.y + i][rotated.x + j] == DUMPED_PIECE)
+            {
+                return false;
+            }
+        }
+    }
 
-bool can_rotate(Piece *piece)
-{
-	int new_rot = (piece->rotation + 1) % ROTATIONS;
-	Piece rotated = init_piece(piece->shape, new_rot, piece->color);
+    if (find_right(&rotated) >= BOARD_WIDTH || find_left(&rotated) < 0)
+        return false;
 
-	rotated.x = piece->x;
-	rotated.y = piece->y;
-
-	int diff_x = find_rot_axis_x(piece) - find_rot_axis_x(&rotated);
-	int diff_y = find_rot_axis_y(piece) - find_rot_axis_y(&rotated);
-
-	if (diff_x){
-		move_x_to_rotate(&rotated, diff_x);
-	}
-	if (diff_y){
-		move_y_to_rotate(&rotated, diff_y);
-	}
-
-
-	if (find_right(&rotated) >= BOARD_WIDTH || find_left(&rotated) < 0 || find_bottom_y(rotated) >= BOARD_HEIGHT)
-	{
-		return false;
-	}
-	
-
-	for (int i = 0; i < PIECE_SIZE; i++)
-	{
-		for (int j = 0; j < PIECE_SIZE; j++)
-		{
-			if (rotated.fields[i][j] && board[rotated.y + i][rotated.x + j] == DUMPED_PIECE)
-			{
-				return false;
-			}
-		}
-	}
-
-	return true;
+    return true;
 }
 
 void rotate(Piece *piece)
 {
-	if (can_rotate(piece))
-	{
-		int new_rot = (piece->rotation + 1) % ROTATIONS;
-		Piece rotated = init_piece(piece->shape, new_rot, piece->color);
+	Piece rotated = init_piece(piece->shape, (piece->rotation + 1) % ROTATIONS, piece->color);
 
-		rotated.x = piece->x;
-		rotated.y = piece->y;
+	rotated.x = piece->x;
+	rotated.y = piece->y;
 
-		int diff_x = find_rot_axis_x(piece) - find_rot_axis_x(&rotated);
-		int diff_y = find_rot_axis_y(piece) - find_rot_axis_y(&rotated);
+	int diff_x = piece->rot_axis_x - rotated.rot_axis_x;
+	int diff_y = piece->rot_axis_y - rotated.rot_axis_y;
 
-		if (diff_x){
-			move_x_to_rotate(&rotated, diff_x);
-		}
-
-		if (diff_y){
-			move_y_to_rotate(&rotated, diff_y);
-		}
-
-		*piece = rotated;
-		add_on_board(*piece);
-	}
-}
-
-void number_active_fields(Piece *piece)
-{
-	int square_count = 0;
-	for (int i = 0; i < PIECE_SIZE; i++)
-	{
-		for (int j = 0; j < PIECE_SIZE; j++)
+	rotated.x -= -diff_x;
+	rotated.y -= -diff_y;
+	
+	for (int i = 0; i < PIECE_SIZE; i ++){
+		if (find_left(&rotated) <= 0)
 		{
-			if (piece->fields[i][j])
-			{
-				piece->number_active_fields[0] = find_right(piece) - find_left(piece) + 1;
-				piece->number_active_fields[1] = find_bottom_y(*piece) - find_top(*piece) + 1;
-				piece->active_fields[square_count][0] = find_left(piece) + i;
-				piece->active_fields[square_count][1] = find_top(*piece) + j;
-				square_count++;
-			}
+			rotated.x = 0;
+			diff_x = 0;
+		}
+		if (find_right(&rotated) >= BOARD_WIDTH - 1)
+		{
+			rotated.x -= 1;
+			diff_x = 0;
+		}
+		if (find_top(rotated) <= 0 ){
+			rotated.y += 1;
+		}
+		if (find_bottom_y(rotated) >= BOARD_HEIGHT - 1){
+			rotated.y -= 1;
 		}
 	}
+	
+	if (can_rotate(&rotated, diff_x, diff_y)){
+		*piece = rotated;
+	}
+
+	add_on_board(*piece);
 }
 
 void draw_all(Piece *piece)
@@ -636,11 +564,10 @@ void game_loop(Piece *piece)
 		draw_all(piece);
 		input(piece);
 
-
-		if (counter++ >= DELAY)
+		if (counter++ >= DELAY + 100)
 		{
 			counter = 0;
-			//move_Y(piece);
+			move_Y(piece);
 		}
 
 		if (check_lose(piece))
@@ -696,7 +623,7 @@ void check_and_clear_rows()
 
 bool check_lose()
 {
-	for (int i = PIECE_SIZE - 1; i < PIECE_SIZE + 3; i++)
+	for (int i = BOARD_WIDTH / 2 - 2; i < BOARD_WIDTH / 2 + 2; i++)
 	{
 
 		if (board[0][i] == DUMPED_PIECE)
