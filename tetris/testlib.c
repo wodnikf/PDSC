@@ -96,9 +96,9 @@ int main(int argc, char *argv[])
 	array[0].rotation_index = rand() % ROTATIONS;
 	array[0].color_index = rand() % COLORS + 1;
 
-	Piece current_piece;
+	Piece current_piece = init_piece(1,1,2);
 
-	next_piece(&current_piece);
+	//next_piece(&current_piece);
 
 	game_loop(&current_piece);
 
@@ -472,6 +472,55 @@ void find_rot_axis(Piece *piece)
 	}
 }
 
+bool check_piece_collision_right(Piece*piece)
+{
+	for (int i = 0; i < PIECE_SIZE; i++)
+	{
+		for (int j = 0; j < PIECE_SIZE; j++)
+		{
+			if (piece->fields[i][j] && board[piece->y + i][piece->x + j + 1] == 3)
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool check_piece_collision_left(Piece*piece)
+{
+	for (int i = 0; i < PIECE_SIZE; i++)
+	{
+		for (int j = 0; j < PIECE_SIZE; j++)
+		{
+			if (piece->fields[i][j] && board[piece->y + i][piece->x + j - 1] == 3)
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool check_rotation(Piece *piece)
+{
+
+	if (piece->x < 0 || piece->x > BOARD_WIDTH || piece->y >= BOARD_HEIGHT || piece->y < 0)
+		return true;
+
+	for(int i = 0; i < PIECE_SIZE; i++)
+	{
+		for(int j = 0; j < PIECE_SIZE; j++)
+		{
+			if((piece->fields[i][j]) && (piece->x + j < 0 || piece->x + j >= BOARD_WIDTH))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 bool can_rotate(Piece *piece, int delta_x, int delta_y)
 {
 	Piece rotated = *piece;
@@ -494,7 +543,7 @@ bool can_rotate(Piece *piece, int delta_x, int delta_y)
 		}
 	}
 
-	if (find_right(&rotated) >= BOARD_WIDTH || find_left(&rotated) < 0)
+	if (find_right(&rotated) >= BOARD_WIDTH - 1 || find_left(&rotated) < 0)
 		return false;
 
 	return true;
@@ -517,21 +566,19 @@ void rotate(Piece *piece)
 	{
 		if (find_left(&rotated) <= 0)
 		{
-			rotated.x = 0;
-			diff_x = 0;
+			return;
 		}
 		if (find_right(&rotated) >= BOARD_WIDTH - 1)
 		{
-			rotated.x -= 1;
-			diff_x = 0;
+			return;
 		}
 		if (find_top(rotated) <= 0)
 		{
-			rotated.y += 1;
+			return;
 		}
 		if (find_bottom_y(rotated) >= BOARD_HEIGHT - 1)
 		{
-			rotated.y -= 1;
+			return;
 		}
 	}
 
