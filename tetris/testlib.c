@@ -472,55 +472,6 @@ void find_rot_axis(Piece *piece)
 	}
 }
 
-bool check_piece_collision_right(Piece*piece)
-{
-	for (int i = 0; i < PIECE_SIZE; i++)
-	{
-		for (int j = 0; j < PIECE_SIZE; j++)
-		{
-			if (piece->fields[i][j] && board[piece->y + i][piece->x + j + 1] == 3)
-			{
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-bool check_piece_collision_left(Piece*piece)
-{
-	for (int i = 0; i < PIECE_SIZE; i++)
-	{
-		for (int j = 0; j < PIECE_SIZE; j++)
-		{
-			if (piece->fields[i][j] && board[piece->y + i][piece->x + j - 1] == 3)
-			{
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-bool check_rotation(Piece *piece)
-{
-
-	if (piece->x < 0 || piece->x > BOARD_WIDTH || piece->y >= BOARD_HEIGHT || piece->y < 0)
-		return true;
-
-	for(int i = 0; i < PIECE_SIZE; i++)
-	{
-		for(int j = 0; j < PIECE_SIZE; j++)
-		{
-			if((piece->fields[i][j]) && (piece->x + j < 0 || piece->x + j >= BOARD_WIDTH))
-			{
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
 bool can_rotate(Piece *piece, int delta_x, int delta_y)
 {
 	Piece rotated = *piece;
