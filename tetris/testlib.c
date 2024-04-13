@@ -30,8 +30,6 @@ int board[BOARD_HEIGHT][BOARD_WIDTH] = {{0}};
 typedef struct
 {
 	int fields[4][4];
-	int number_active_fields[2];
-	int active_fields[4][2];
 	int shape;
 	int rotation;
 	int color;
@@ -513,24 +511,21 @@ void rotate(Piece *piece)
 	rotated.x -= -diff_x;
 	rotated.y -= -diff_y;
 
-	for (int i = 0; i < PIECE_SIZE; i++)
+	if (find_left(&rotated) <= 0)
 	{
-		if (find_left(&rotated) <= 0)
-		{
-			return;
-		}
-		if (find_right(&rotated) >= BOARD_WIDTH - 1)
-		{
-			return;
-		}
-		if (find_top(rotated) <= 0)
-		{
-			return;
-		}
-		if (find_bottom_y(rotated) >= BOARD_HEIGHT - 1)
-		{
-			return;
-		}
+		return;
+	}
+	if (find_right(&rotated) >= BOARD_WIDTH - 1)
+	{
+		return;
+	}
+	if (find_top(rotated) <= 0)
+	{
+		return;
+	}
+	if (find_bottom_y(rotated) >= BOARD_HEIGHT - 1)
+	{
+		return;
 	}
 
 	if (can_rotate(&rotated, diff_x, diff_y))
