@@ -94,9 +94,9 @@ int main(int argc, char *argv[])
 	array[0].rotation_index = rand() % ROTATIONS;
 	array[0].color_index = rand() % COLORS + 1;
 
-	Piece current_piece = init_piece(1,1,2);
+	Piece current_piece;
 
-	//next_piece(&current_piece);
+	next_piece(&current_piece);
 
 	game_loop(&current_piece);
 
@@ -511,11 +511,11 @@ void rotate(Piece *piece)
 	rotated.x -= -diff_x;
 	rotated.y -= -diff_y;
 
-	if (find_left(&rotated) <= 0)
+	if (find_left(&rotated) < 0)
 	{
 		return;
 	}
-	if (find_right(&rotated) >= BOARD_WIDTH - 1)
+	if (find_right(&rotated) > BOARD_WIDTH -1)
 	{
 		return;
 	}
@@ -528,10 +528,22 @@ void rotate(Piece *piece)
 		return;
 	}
 
-	if (can_rotate(&rotated, diff_x, diff_y))
+	for (int i = 0; i < PIECE_SIZE; i++)
 	{
-		*piece = rotated;
+		for (int j = 0; j < PIECE_SIZE; j++)
+		{
+			if (rotated.fields[i][j] && board[rotated.y + i][rotated.x + j] == DUMPED_PIECE)
+			{
+				return ;
+			}
+		}
 	}
+
+	*piece = rotated;
+	// if (can_rotate(&rotated, diff_x, diff_y))
+	// {
+	// 	printf("can\n");
+	// }
 
 	add_on_board(*piece);
 }
