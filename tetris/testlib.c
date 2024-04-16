@@ -470,34 +470,6 @@ void find_rot_axis(Piece *piece)
 	}
 }
 
-bool can_rotate(Piece *piece, int delta_x, int delta_y)
-{
-	Piece rotated = *piece;
-	rotated.rotation = (rotated.rotation + 1) % ROTATIONS;
-
-	rotated.x += delta_x;
-	rotated.y += delta_y;
-
-	if (rotated.x < 0 || rotated.x >= BOARD_WIDTH || rotated.y >= BOARD_HEIGHT || rotated.y < 0)
-		return false;
-
-	for (int i = 0; i < PIECE_SIZE; i++)
-	{
-		for (int j = 0; j < PIECE_SIZE; j++)
-		{
-			if (rotated.fields[i][j] && board[rotated.y + i][rotated.x + j] == DUMPED_PIECE)
-			{
-				return false;
-			}
-		}
-	}
-
-	if (find_right(&rotated) >= BOARD_WIDTH - 1 || find_left(&rotated) < 0)
-		return false;
-
-	return true;
-}
-
 void rotate(Piece *piece)
 {
 	Piece rotated = init_piece(piece->shape, (piece->rotation + 1) % ROTATIONS, piece->color);
@@ -540,10 +512,6 @@ void rotate(Piece *piece)
 	}
 
 	*piece = rotated;
-	// if (can_rotate(&rotated, diff_x, diff_y))
-	// {
-	// 	printf("can\n");
-	// }
 
 	add_on_board(*piece);
 }
