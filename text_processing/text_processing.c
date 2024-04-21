@@ -3,9 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-bool fail = false;
-
-char *read_line(bool *fail)
+char *read_line()
 {
     char *line = NULL;
     int c;
@@ -28,7 +26,7 @@ char *read_line(bool *fail)
             else
             {
                 free(line);
-                *fail = true;
+
                 return NULL;
             }
 
@@ -37,7 +35,7 @@ char *read_line(bool *fail)
             if (!newbuf)
             {
                 free(line);
-                *fail = true;
+
                 return NULL;
             }
             line = newbuf;
@@ -51,7 +49,6 @@ char *read_line(bool *fail)
         }
     }
 
-    // file is empty
     if ((c == EOF) && (length == 0))
     {
         free(line);
@@ -66,20 +63,19 @@ char *read_line(bool *fail)
         else
         {
             free(line);
-            *fail = true;
+
             return NULL;
         }
         newbuf = realloc(line, bufsize);
         if (!newbuf)
         {
             free(line);
-            *fail = true;
+
             return NULL;
         }
         line = newbuf;
     }
 
-    // end of line
     line[length++] = '\0';
 
     return line;
@@ -87,6 +83,43 @@ char *read_line(bool *fail)
 
 void reverse_words(char *line)
 {
+    char *start = line;
+    char *end = strchr(line, '\0') - 1;
+
+    while (start < end)
+    {
+        char tmp = *start;
+        *start = *end;
+        *end = tmp;
+        start++;
+        end--;
+    }
+
+    start = line;
+    while (*start != '\0')
+    {
+        while (*start == ' ' || *start == '\n')
+        {
+            start++;
+        }
+        char *word_end = start;
+        while (*word_end != ' ' && *word_end != '\n' && *word_end != '\0')
+        {
+            word_end++;
+        }
+        end = word_end - 1;
+
+        while (start < end)
+        {
+            char tmp = *start;
+            *start = *end;
+            *end = tmp;
+            start++;
+            end--;
+        }
+
+        start = word_end;
+    }
 }
 
 void reverse_lines()
@@ -94,7 +127,7 @@ void reverse_lines()
     char **lines = NULL;
     int number_of_lines = 0;
     char *line;
-    while ((line = read_line(&fail)))
+    while ((line = read_line()))
     {
         char **new_lines = realloc(lines, (number_of_lines + 1) * sizeof(char *));
         if (!new_lines)
@@ -107,6 +140,7 @@ void reverse_lines()
             exit(1);
         }
         lines = new_lines;
+        reverse_words(line);
         lines[number_of_lines++] = line;
     }
     for (int i = number_of_lines; i > 0; i--)
@@ -115,9 +149,11 @@ void reverse_lines()
         free(lines[i - 1]);
     }
     free(lines);
+    printf("\n");
 }
+
 int main()
 {
-    reverse_lines(NULL); // Call the function with NULL argument as it doesn't use it.
+    reverse_lines();
     return 0;
 }
