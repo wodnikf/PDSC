@@ -36,9 +36,9 @@ char *read_line()
             if (!newbuf)
             {
                 free(line);
-
                 return NULL;
             }
+            
             line = newbuf;
         }
 
@@ -137,6 +137,7 @@ void reverse_lines()
             {
                 free(lines[i]);
             }
+            free(line);
             free(lines);
             exit(1);
         }
