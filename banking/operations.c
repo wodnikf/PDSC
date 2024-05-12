@@ -5,9 +5,15 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 
 #define INTEREST 0.1
 #define INTEREST_MORE 0.05
+#define MAX_DEPOSIT 100000
+#define MAX_WITHDRAW 100000
+#define MAX_LOAN 100000
+#define MAX_MONEY (INT32_MAX - MAX_DEPOSIT)
+
 
 void print_operations(void)
 {
@@ -105,6 +111,18 @@ void deposit(FILE *file_path, int account_number, double money)
 {
     Client client;
     bool found = false;
+    
+    if (money > MAX_DEPOSIT)
+    {
+        printf("Value exceeds maximum\n");
+        return;
+    }
+
+    else if (money <= 0)
+    {
+        printf("Value must be positive\n");
+        return;
+    }
 
     if ((file_path = fopen("clients.dat", "r+b")) == NULL)
     {
@@ -116,6 +134,11 @@ void deposit(FILE *file_path, int account_number, double money)
     {
         if (client.id == account_number)
         {
+            if(client.balance + money > MAX_MONEY)
+            {
+                printf("Value exceeds maximum account value\n");
+                return;
+            }
             client.balance += money;
             fseek(file_path, -sizeof(Client), SEEK_CUR);
             fwrite(&client, sizeof(Client), 1, file_path);
@@ -136,6 +159,18 @@ void withdraw(FILE *file_path, int account_number, double money)
 {
     Client client;
     bool found = false;
+
+    if (money > MAX_WITHDRAW)
+    {
+        printf("Value exceeds maximum\n");
+        return;
+    }
+
+    else if (money <= 0)
+    {
+        printf("Value must be positive\n");
+        return;
+    }
 
     if ((file_path = fopen("clients.dat", "r+b")) == NULL)
     {
@@ -184,6 +219,18 @@ void take_loan(FILE *file_path, int account_number)
     double loan = get_double_input("Enter amount of money that you want to borrow: ");
     printf("\n");
 
+    if (loan > MAX_LOAN)
+    {
+        printf("Value exceeds maximum\n");
+        return;
+    }
+
+    else if (loan <= 0)
+    {
+        printf("Value must be positive\n");
+        return;
+    }
+
     if (!get_confirmation())
     {
         printf("Operation canceled\n");
@@ -202,6 +249,11 @@ void take_loan(FILE *file_path, int account_number)
     {
         if (client.id == account_number)
         {
+            if (client.balance + loan > MAX_MONEY)
+            {
+                printf("Value exceeds maximum account value\n");
+                return;
+            }
             found = true;
             client.balance += loan;
             if (client.interest_rate == 0)
