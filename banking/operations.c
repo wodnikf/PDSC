@@ -44,7 +44,7 @@ void main_loop(FILE *file_path, int id)
         {
         case 1:
             create_account(&id, file_path);
-            printf("\n\n\n");
+            printf("\n\n");
             break;
         case 2:
             list_all_accounts(file_path, id);
@@ -57,20 +57,38 @@ void main_loop(FILE *file_path, int id)
             money = get_double_input("Please enter how much money do you want to deposit: ");
             if (!get_confirmation())
             {
-                printf("Operation canceled\n");
+                printf("Operation canceled\n\n");
                 break;
             }
-            deposit(file_path, acc, money);
+            bool succesful_deposit = false;
+            deposit(file_path, acc, money, &succesful_deposit);
+            if (succesful_deposit)
+            {
+                printf("Succesful deposit of %.2lf PLN\n\n", money);
+            }
+            else
+            {
+                printf("Unsuccesful deposit of %.2lf PLN\n\n", money);
+            }
             break;
         case 5:
             acc = get_int_input("Enter your account number: ");
             money = get_double_input("Please enter how much money do you want to withdraw: ");
             if (!get_confirmation())
             {
-                printf("Operation canceled\n");
+                printf("Operation canceled\n\n");
                 break;
             }
-            withdraw(file_path, acc, money);
+            bool succesful_withdraw = false;
+            withdraw(file_path, acc, money, &succesful_withdraw);
+            if(succesful_withdraw)
+            {
+                printf("Succesful withdraw of %.2lf PLN\n\n", money);
+            }
+            else
+            {
+                printf("Unsuccesful withdraw of %.2lf PLN\n\n", money);
+            }
             break;
         case 6:
             acc = get_int_input("Enter your account number: ");
@@ -80,7 +98,7 @@ void main_loop(FILE *file_path, int id)
             acc = get_int_input("Enter your account number: ");
             if (!get_confirmation())
             {
-                printf("Operation canceled\n");
+                printf("Operation canceled\n\n");
                 break;
             }
             pay_debt(file_path, acc);
@@ -91,23 +109,23 @@ void main_loop(FILE *file_path, int id)
             money = get_double_input("Please enter how much money do you want to transfer: ");
             if (!get_confirmation())
             {
-                printf("Operation canceled\n");
+                printf("Operation canceled\n\n");
                 break;
             }
             transfer(file_path, giver, receiver, money);
             break;
         case 9:
-            printf("Exiting\n");
+            printf("Exiting\n\n");
             return;
 
         default:
-            printf("Invalid choice\n");
+            printf("Invalid choice\n\n");
             break;
         }
     }
 }
 
-void deposit(FILE *file_path, int account_number, double money)
+void deposit(FILE *file_path, int account_number, double money, bool *flag)
 {
     Client client;
     bool found = false;
@@ -140,6 +158,7 @@ void deposit(FILE *file_path, int account_number, double money)
                 return;
             }
             client.balance += money;
+            *flag = true;
             fseek(file_path, -sizeof(Client), SEEK_CUR);
             fwrite(&client, sizeof(Client), 1, file_path);
             found = true;
@@ -155,7 +174,7 @@ void deposit(FILE *file_path, int account_number, double money)
     fclose(file_path);
 }
 
-void withdraw(FILE *file_path, int account_number, double money)
+void withdraw(FILE *file_path, int account_number, double money, bool *flag)
 {
     Client client;
     bool found = false;
@@ -192,6 +211,7 @@ void withdraw(FILE *file_path, int account_number, double money)
             else
             {
                 client.balance -= money;
+                *flag = true;
                 fseek(file_path, -sizeof(Client), SEEK_CUR);
                 fwrite(&client, sizeof(Client), 1, file_path);
                 break;
@@ -209,8 +229,22 @@ void withdraw(FILE *file_path, int account_number, double money)
 
 void transfer(FILE *file_path, int giver, int reciever, double money)
 {
-    deposit(file_path, reciever, money);
-    withdraw(file_path, giver, money);
+    bool succesful_withdraw = false;
+    bool succesful_deposit = false;
+    withdraw(file_path, giver, money, &succesful_withdraw);
+    
+    if (succesful_withdraw)
+    {
+        deposit(file_path, reciever, money, &succesful_deposit);
+        if (succesful_deposit)
+        {
+            printf("Succesful transaction\n");
+        }
+    }
+    else
+    {
+        printf("Unsuccesful transaction\n");
+    }
 }
 
 void take_loan(FILE *file_path, int account_number)
@@ -272,7 +306,17 @@ void take_loan(FILE *file_path, int account_number)
             break;
         }
     }
-    deposit(file_path, account_number, loan);
+    bool succesful_deposit = false;
+    deposit(file_path, account_number, loan, &succesful_deposit);
+
+    if (succesful_deposit)
+    {
+        printf("Succesful operation\n");
+    }
+    else if(!succesful_deposit)
+    {
+        printf("Unsuccesful operation\n");
+    }
 
     if (!found)
     {

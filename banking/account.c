@@ -55,6 +55,7 @@ void print_account(Client *client)
     printf("Balance: %.2lf PLN\n", client->balance);
     printf("Loan: %.2lf PLN\n", client->balance_loan);
     printf("Interest rate: %.2lf %%\n", client->interest_rate);
+    printf("\n\n\n");
 }
 
 void list_all_accounts(FILE *file_path, int id)

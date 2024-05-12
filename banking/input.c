@@ -136,6 +136,6 @@ void get_user_choice_input(int *choice)
     do
     {
         *choice = get_int_input("Please enter your choice: ");
-        printf("%d\n", *choice);
+        printf("\n\n");
     } while (*choice < 1 || *choice > 9);
 }
