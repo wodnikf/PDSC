@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
+#include <stdint.h>
 
 #define INTEREST 0.1
 #define INTEREST_MORE 0.05

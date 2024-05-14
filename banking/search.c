@@ -21,6 +21,7 @@ void search_by_id(FILE *file_path, int value)
             print_account(&to_find);
         }
     }
+    fclose(file_path);
 }
 
 void search_by_name(FILE *file_path, char *value)
@@ -39,6 +40,7 @@ void search_by_name(FILE *file_path, char *value)
             print_account(&to_find);
         }
     }
+    fclose(file_path);
 }
 
 void search_by_surname(FILE *file_path, char *value)
@@ -57,6 +59,7 @@ void search_by_surname(FILE *file_path, char *value)
             print_account(&to_find);
         }
     }
+    fclose(file_path);
 }
 
 void search_by_pesel(FILE *file_path, char *value)
@@ -75,6 +78,7 @@ void search_by_pesel(FILE *file_path, char *value)
             print_account(&to_find);
         }
     }
+    fclose(file_path);
 }
 
 void search_by_address(FILE *file_path, char *value)
@@ -93,4 +97,5 @@ void search_by_address(FILE *file_path, char *value)
             print_account(&to_find);
         }
     }
+    fclose(file_path);
 }

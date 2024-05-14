@@ -10,6 +10,5 @@ int main(void)
 
     initialize_database(&file_path, &id);
     main_loop(file_path, id);
-    fclose(file_path);
     return 0;
 }
