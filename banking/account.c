@@ -7,6 +7,7 @@
 void create_account(int *id, FILE *file_path)
 {
     Client new_client;
+    memset(&new_client, 0, sizeof(Client));
 
     new_client.id = ++(*id);
 
